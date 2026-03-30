@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeResume } from "@/lib/gemini";
+import * as pdfParse from "pdf-parse";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,20 +14,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File or JD missing" }, { status: 400 });
     }
 
+    // Extract text from PDF
     const arrayBuffer = await file.arrayBuffer();
-    const base64Data = Buffer.from(arrayBuffer).toString("base64");
+    const buffer = Buffer.from(arrayBuffer);
+    const pdfData = await pdfParse(buffer);
+    const resumeText = pdfData.text;
 
-    console.log("🚀 Sending PDF to OpenRouter...");
-    const responseText = await analyzeResume(base64Data, jobDescription);
+    console.log("🚀 Sending to OpenRouter...");
+    const responseText = await analyzeResume(resumeText, jobDescription);
 
     const cleanJson = responseText.replace(/```json|```/g, "").trim();
     return NextResponse.json(JSON.parse(cleanJson));
 
   } catch (error: any) {
-    console.error("Detailed Server Error:", error);
-    return NextResponse.json({ 
-      error: "Analysis failed", 
-      message: error.message 
-    }, { status: 500 });
+    console.error("Server Error:", error);
+    return NextResponse.json({ error: "Analysis failed", message: error.message }, { status: 500 });
   }
 }

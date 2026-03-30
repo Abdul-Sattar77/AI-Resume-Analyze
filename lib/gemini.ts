@@ -7,7 +7,7 @@ Return ONLY a valid JSON object with no extra text:
   "summary": string
 }`;
 
-export async function analyzeResume(base64PDF: string, jobDescription: string) {
+export async function analyzeResume(resumeText: string, jobDescription: string) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -16,29 +16,14 @@ export async function analyzeResume(base64PDF: string, jobDescription: string) {
     },
     body: JSON.stringify({
       model: "openrouter/free",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `${ANALYSIS_PROMPT}\n\nJOB DESCRIPTION:\n${jobDescription}`
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${base64PDF}`
-              }
-            }
-          ]
-        }
-      ]
+      messages: [{
+        role: "user",
+        content: `${ANALYSIS_PROMPT}\n\nJOB DESCRIPTION:\n${jobDescription}\n\nRESUME TEXT:\n${resumeText}`
+      }]
     })
   });
 
   const data = await response.json();
-
-  // Log full response so we can debug if it fails
   console.log("OpenRouter raw response:", JSON.stringify(data, null, 2));
 
   if (!response.ok || !data.choices) {
